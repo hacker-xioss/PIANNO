@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Piano Virtuel Pro+</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #8e44ad;
+            --secondary: #3498db;
+            --dark: #1a1a2e;
+            --light: #f5f5f5;
+            --black-key: linear-gradient(145deg, #2c3e50, #000);
+            --white-key: linear-gradient(to bottom, #fff 0%, #f5f5f5 100%);
+            --wood-texture: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M0 50 L100 50 M50 0 L50 100" stroke="%23d4a76a" stroke-width="1" opacity="0.3"/></svg>');
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--dark), #16213e);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        .piano-container {
+            width: 95%;
+            max-width: 1400px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .piano-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(145deg, var(--primary), #9b59b6);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            backdrop-filter: blur(5px);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .piano-keys-container {
+            position: relative;
+            overflow-x: auto;
+            padding-bottom: 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .piano {
+            display: flex;
+            position: relative;
+            height: 300px;
+            min-width: fit-content;
+            margin: 0 auto;
+            touch-action: manipulation;
+        }
+
+        .key {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.1s ease;
+        }
+
+        .white {
+            height: 100%;
+            background: var(--white-key);
+            border: 1px solid #e0e0e0;
+            border-radius: 0 0 8px 8px;
+            width: 60px;
+            color: #333;
+            z-index: 1;
+            box-shadow: inset 0 -5px 10px rgba(0, 0, 0, 0.05),
+                        0 2px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .white.active {
+            background: linear-gradient(to bottom, #e0e0e0 0%, #d0d0d0 100%);
+            box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.1);
+            transform: translateY(2px);
+        }
+
+        .black {
+            height: 65%;
+            background: var(--black-key);
+            border-radius: 0 0 6px 6px;
+            width: 40px;
+            margin: 0 -20px;
+            z-index: 2;
+            color: white;
+            box-shadow: inset 0 -7px 15px rgba(0, 0, 0, 0.4),
+                        0 3px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .black.active {
+            background: linear-gradient(145deg, #1a1a2e, #000);
+            box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.5);
+            transform: translateY(2px);
+        }
+
+        .key-label {
+            pointer-events: none;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .keyboard-helper {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .settings {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .setting-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 50px;
+        }
+
+        label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        input[type="range"] {
+            width: 100px;
+            accent-color: var(--primary);
+        }
+
+        .pedal {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .pedal-btn {
+            width: 100px;
+            height: 40px;
+            border-radius: 20px 20px 0 0;
+            background: var(--black-key);
+            border: none;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pedal-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--wood-texture);
+            opacity: 0.3;
+        }
+
+        .pedal-btn.active {
+            transform: translateY(10px);
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .presets {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            padding: 8px 15px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .piano {
+                height: 220px;
+            }
+            
+            .white {
+                width: 50px;
+            }
+            
+            .black {
+                width: 35px;
+                margin: 0 -17.5px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .btn {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .piano {
+                height: 180px;
+            }
+            
+            .white {
+                width: 40px;
+            }
+            
+            .black {
+                width: 28px;
+                margin: 0 -14px;
+            }
+            
+            .key-label {
+                font-size: 0.7rem;
+            }
+            
+            .controls {
+                justify-content: center;
+            }
+        }
+
+        /* Animation de notification */
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            20% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+        }
+
+        /* Style pour le sélecteur d'octave */
+        .octave-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .octave-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .octave-btn.active {
+            background: var(--primary);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="piano-container">
+        <div class="piano-header">
+            <h1>Piano Virtuel Pro+</h1>
+            <div class="controls">
+                <button id="record-btn" class="btn btn-primary">
+                    <i class="fas fa-circle"></i> Enregistrer
+                </button>
+                <button id="play-btn" class="btn btn-secondary">
+                    <i class="fas fa-play"></i> Jouer
+                </button>
+                <button id="clear-btn" class="btn btn-secondary">
+                    <i class="fas fa-trash"></i> Effacer
+                </button>
+                <button id="sustain-btn" class="btn btn-secondary">
+                    <i class="fas fa-pedal"></i> Pédale
+                </button>
+            </div>
+        </div>
+
+        <div class="octave-selector">
+            <button class="octave-btn" data-octave="2">2</button>
+            <button class="octave-btn active" data-octave="3">3</button>
+            <button class="octave-btn" data-octave="4">4</button>
+            <button class="octave-btn" data-octave="5">5</button>
+        </div>
+        
+        <div class="piano-keys-container">
+            <div class="piano" id="piano-keys">
+                <!-- Les touches seront générées dynamiquement par JavaScript -->
+            </div>
+        </div>
+        
+        <div class="settings">
+            <div class="setting-group">
+                <label for="volume"><i class="fas fa-volume-up"></i> Volume</label>
+                <input type="range" id="volume" min="0" max="1" step="0.01" value="0.7">
+            </div>
+            <div class="setting-group">
+                <label for="reverb"><i class="fas fa-wave-square"></i> Réverb</label>
+                <input type="range" id="reverb" min="0" max="1" step="0.1" value="0.3">
+            </div>
+            <div class="setting-group">
+                <label for="attack"><i class="fas fa-bolt"></i> Attaque</label>
+                <input type="range" id="attack" min="0" max="1" step="0.1" value="0.2">
+            </div>
+        </div>
+
+        <div class="pedal">
+            <button id="sustain-pedal" class="pedal-btn">
+                <i class="fas fa-pedal"></i> Sustain
+            </button>
+        </div>
+
+        <div class="presets">
+            <button class="preset-btn" data-preset="piano">Piano Classique</button>
+            <button class="preset-btn" data-preset="honkytonk">Honky-Tonk</button>
+            <button class="preset-btn" data-preset="harpsichord">Clavecin</button>
+            <button class="preset-btn" data-preset="synth">Synthé</button>
+        </div>
+        
+        <div class="keyboard-helper">
+            <p>Utilisez votre clavier (A-L pour les blanches, W,E,T,Y,U,I,O pour les noires) | Espace: pédale</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialisation
+            const pianoKeysContainer = document.getElementById('piano-keys');
+            const volumeControl = document.getElementById('volume');
+            const reverbControl = document.getElementById('reverb');
+            const attackControl = document.getElementById('attack');
+            const recordBtn = document.getElementById('record-btn');
+            const playBtn = document.getElementById('play-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            const sustainPedal = document.getElementById('sustain-pedal');
+            const sustainBtn = document.getElementById('sustain-btn');
+            const octaveButtons = document.querySelectorAll('.octave-btn');
+            const presetButtons = document.querySelectorAll('.preset-btn');
+            
+            let audioContext;
+            let gainNode;
+            let reverbNode;
+            let convolver;
+            let activeOscillators = new Set();
+            let recordedNotes = [];
+            let isRecording = false;
+            let startTime;
+            let currentOctave = 3;
+            let isSustainOn = false;
+            let currentPreset = 'piano';
+            let soundSettings = {
+                piano: { osc1: 'sine', osc2: 'triangle', osc3: 'sawtooth', attack: 0.2, decay: 0.3 },
+                honkytonk: { osc1: 'square', osc2: 'sine', osc3: null, attack: 0.1, decay: 0.5 },
+                harpsichord: { osc1: 'sine', osc2: 'square', osc3: null, attack: 0.01, decay: 0.2 },
+                synth: { osc1: 'sawtooth', osc2: 'square', osc3: 'sine', attack: 0.5, decay: 0.7 }
+            };
+
+            // Notes disponibles par octave
+            const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+            const whiteKeys = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+            const blackKeys = ['C#', 'D#', 'F#', 'G#', 'A#'];
+            
+            // Mapping clavier
+            const keyMap = {
+                'a': 'C', 'w': 'C#', 's': 'D', 'e': 'D#', 'd': 'E',
+                'f': 'F', 't': 'F#', 'g': 'G', 'y': 'G#', 'h': 'A',
+                'u': 'A#', 'j': 'B', 'k': 'C', 'l': 'D',
+                'r': 'record-btn', 'p': 'play-btn', ' ': 'sustain-pedal'
+            };
+
+            // Création des touches du piano
+            function createPianoKeys() {
+                pianoKeysContainer.innerHTML = '';
+                
+                // Créer les touches pour l'octave actuelle
+                notes.forEach((note, index) => {
+                    const isWhiteKey = whiteKeys.includes(note);
+                    const key = document.createElement('div');
+                    key.className = `key ${isWhiteKey ? 'white' : 'black'}`;
+                    key.dataset.note = `${note}${currentOctave}`;
+                    
+                    const label = document.createElement('span');
+                    label.className = 'key-label';
+                    
+                    // Ajouter les labels seulement pour les touches blanches
+                    if (isWhiteKey) {
+                        const keyLetter = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'][whiteKeys.indexOf(note)];
+                        if (keyLetter) label.textContent = `${note} (${keyLetter})`;
+                    } else {
+                        const keyLetter = ['W', 'E', 'T', 'Y', 'U'][blackKeys.indexOf(note)];
+                        if (keyLetter) label.textContent = `${note} (${keyLetter})`;
+                    }
+                    
+                    key.appendChild(label);
+                    pianoKeysContainer.appendChild(key);
+                });
+                
+                // Ajouter les écouteurs d'événements aux nouvelles touches
+                setupKeyEvents();
+            }
+
+            // Initialisation audio
+            function initAudio() {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // Création des nodes audio
+                    gainNode = audioContext.createGain();
+                    gainNode.gain.value = volumeControl.value;
+                    
+                    reverbNode = audioContext.createGain();
+                    reverbNode.gain.value = reverbControl.value;
+                    
+                    convolver = audioContext.createConvolver();
+                    createReverbImpulse();
+                    
+                    // Connexion des nodes
+                    gainNode.connect(convolver);
+                    convolver.connect(reverbNode);
+                    reverbNode.connect(audioContext.destination);
+                }
+            }
+
+            // Création d'une réverbération artificielle
+            function createReverbImpulse() {
+                const sampleRate = audioContext.sampleRate;
+                const length = sampleRate * 2;
+                const impulse = audioContext.createBuffer(2, length, sampleRate);
+                const left = impulse.getChannelData(0);
+                const right = impulse.getChannelData(1);
+                
+                for (let i = 0; i < length; i++) {
+                    const n = length - i;
+                    left[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 3);
+                    right[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 3);
+                }
+                
+                convolver.buffer = impulse;
+            }
+
+            // Jouer une note
+            function playNote(note) {
+                if (!audioContext) initAudio();
+                
+                const now = audioContext.currentTime;
+                const freq = getNoteFrequency(note);
+                const settings = soundSettings[currentPreset];
+                const attackTime = parseFloat(attackControl.value);
+                
+                // Création des oscillateurs selon le preset
+                const oscillators = [];
+                
+                if (settings.osc1) {
+                    const osc1 = audioContext.createOscillator();
+                    osc1.type = settings.osc1;
+                    osc1.frequency.value = freq;
+                    oscillators.push(osc1);
+                }
+                
+                if (settings.osc2) {
+                    const osc2 = audioContext.createOscillator();
+                    osc2.type = settings.osc2;
+                    osc2.frequency.value = freq * 2;
+                    oscillators.push(osc2);
+                }
+                
+                if (settings.osc3) {
+                    const osc3 = audioContext.createOscillator();
+                    osc3.type = settings.osc3;
+                    osc3.frequency.value = freq / 2;
+                    oscillators.push(osc3);
+                }
+                
+                // Création de l'enveloppe ADSR
+                const envelope = audioContext.createGain();
+                envelope.gain.setValueAtTime(0, now);
+                envelope.gain.linearRampToValueAtTime(0.8, now + attackTime);
+                envelope.gain.exponentialRampToValueAtTime(0.3, now + attackTime + settings.decay);
+                envelope.gain.exponentialRampToValueAtTime(0.001, now + attackTime + settings.decay + (isSustainOn ? 2 : 0.5));
+                
+                // Connexion des nodes
+                oscillators.forEach(osc => {
+                    osc.connect(envelope);
+                    osc.start(now);
+                    
+                    if (!isSustainOn) {
+                        osc.stop(now + attackTime + settings.decay + 0.5);
+                    } else {
+                        osc.stop(now + attackTime + settings.decay + 2);
+                    }
+                    
+                    activeOscillators.add(osc);
+                    osc.onended = () => activeOscillators.delete(osc);
+                });
+                
+                envelope.connect(gainNode);
+                
+                // Enregistrement si activé
+                if (isRecording) {
+                    const time = Date.now() - startTime;
+                    recordedNotes.push({ note, time });
+                }
+            }
+
+            // Arrêter toutes les notes
+            function stopAllNotes() {
+                activeOscillators.forEach(osc => {
+                    try {
+                        osc.stop();
+                    } catch(e) {
+                        console.log("Note already stopped");
+                    }
+                });
+                activeOscillators.clear();
+            }
+
+            // Fréquences des notes
+            function getNoteFrequency(note) {
+                const octave = parseInt(note.slice(-1));
+                const noteName = note.slice(0, -1);
+                const noteIndex = notes.indexOf(noteName);
+                
+                // Formule A4 = 440Hz
+                return 440 * Math.pow(2, (noteIndex - 9 + (octave - 4) * 12) / 12);
+            }
+
+            // Gestion des événements tactiles/clavier
+            function activateKey(note) {
+                const key = document.querySelector(`.key[data-note="${note}"]`);
+                if (key) {
+                    key.classList.add('active');
+                    playNote(note);
+                    
+                    // Désactivation après un court délai pour l'effet visuel
+                    setTimeout(() => {
+                        if (!isSustainOn) {
+                            key.classList.remove('active');
+                        }
+                    }, 200);
+                }
+            }
+
+            // Configuration des écouteurs d'événements
+            function setupKeyEvents() {
+                document.querySelectorAll('.key').forEach(key => {
+                    const note = key.dataset.note;
+                    
+                    // Pour souris
+                    key.addEventListener('mousedown', () => activateKey(note));
+                    key.addEventListener('mouseup', () => {
+                        if (!isSustainOn) key.classList.remove('active');
+                    });
+                    key.addEventListener('mouseleave', () => {
+                        if (!isSustainOn) key.classList.remove('active');
+                    });
+                    
+                    // Pour écrans tactiles
+                    key.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        activateKey(note);
+                    });
+                    key.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                        if (!isSustainOn) key.classList.remove('active');
+                    });
+                });
+            }
+
+            // Gestion du clavier physique
+            document.addEventListener('keydown', (e) => {
+                const key = e.key.toLowerCase();
+                
+                if (keyMap[key]) {
+                    if (key === 'r' || key === 'p' || key === ' ') {
+                        document.getElementById(keyMap[key]).click();
+                    } else {
+                        const note = `${keyMap[key]}${currentOctave}`;
+                        activateKey(note);
+                    }
+                }
+            });
+
+            // Contrôles
+            volumeControl.addEventListener('input', () => {
+                if (gainNode) gainNode.gain.value = volumeControl.value;
+            });
+            
+            reverbControl.addEventListener('input', () => {
+                if (reverbNode) reverbNode.gain.value = reverbControl.value;
+            });
+            
+            attackControl.addEventListener('input', () => {
+                soundSettings[currentPreset].attack = parseFloat(attackControl.value);
+            });
+
+            // Enregistrement
+            recordBtn.addEventListener('click', () => {
+                isRecording = !isRecording;
+                
+                if (isRecording) {
+                    recordedNotes = [];
+                    startTime = Date.now();
+                    recordBtn.innerHTML = '<i class="fas fa-stop"></i> Arrêter';
+                    recordBtn.style.background = 'linear-gradient(145deg, #e74c3c, #c0392b)';
+                    showNotification('Enregistrement démarré');
+                } else {
+                    recordBtn.innerHTML = '<i class="fas fa-circle"></i> Enregistrer';
+                    recordBtn.style.background = 'linear-gradient(145deg, var(--primary), #9b59b6)';
+                    
+                    if (recordedNotes.length > 0) {
+                        showNotification(`Enregistrement terminé (${recordedNotes.length} notes)`);
+                    }
+                }
+            });
+
+            // Lecture
+            playBtn.addEventListener('click', () => {
+                if (recordedNotes.length === 0) {
+                    showNotification('Aucun enregistrement à jouer');
+                    return;
+                }
+                
+                if (!audioContext) initAudio();
+                
+                const startTime = audioContext.currentTime;
+                stopAllNotes();
+                
+                recordedNotes.forEach(note => {
+                    const playTime = startTime + note.time / 1000;
+                    setTimeout(() => {
+                        playNote(note.note);
+                    }, note.time);
+                });
+            });
+
+            // Effacer
+            clearBtn.addEventListener('click', () => {
+                recordedNotes = [];
+                showNotification('Enregistrement effacé');
+            });
+
+            // Pédale sustain
+            sustainPedal.addEventListener('mousedown', () => toggleSustain(true));
+            sustainPedal.addEventListener('mouseup', () => toggleSustain(false));
+            sustainBtn.addEventListener('click', () => toggleSustain(!isSustainOn));
+
+            function toggleSustain(state) {
+                isSustainOn = state;
+                sustainPedal.classList.toggle('active', isSustainOn);
+                sustainBtn.classList.toggle('active', isSustainOn);
+                
+                if (!isSustainOn) {
+                    // Désactive l'état visuel des touches quand la pédale est relâchée
+                    document.querySelectorAll('.key.active').forEach(key => {
+                        if (!key.classList.contains('mouse-down')) {
+                            key.classList.remove('active');
+                        }
+                    });
+                    stopAllNotes();
+                }
+            }
+
+            // Sélection d'octave
+            octaveButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currentOctave = parseInt(btn.dataset.octave);
+                    octaveButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    createPianoKeys();
+                    showNotification(`Octave ${currentOctave}`);
+                });
+            });
+
+            // Presets sonores
+            presetButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currentPreset = btn.dataset.preset;
+                    presetButtons.forEach(b => b.style.background = '');
+                    btn.style.background = 'rgba(255, 255, 255, 0.3)';
+                    
+                    // Mise à jour des paramètres
+                    attackControl.value = soundSettings[currentPreset].attack;
+                    showNotification(`Présélection: ${btn.textContent}`);
+                });
+            });
+
+            // Notification élégante
+            function showNotification(message) {
+                const notification = document.createElement('div');
+                notification.textContent = message;
+                notification.style.position = 'fixed';
+                notification.style.bottom = '20px';
+                notification.style.left = '50%';
+                notification.style.transform = 'translateX(-50%)';
+                notification.style.background = 'rgba(0, 0, 0, 0.7)';
+                notification.style.color = 'white';
+                notification.style.padding = '10px 20px';
+                notification.style.borderRadius = '50px';
+                notification.style.zIndex = '1000';
+                notification.style.animation = 'fadeInOut 2.5s ease-in-out';
+                notification.style.pointerEvents = 'none';
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 2500);
+            }
+
+            // Initialisation
+            createPianoKeys();
+            presetButtons[0].style.background = 'rgba(255, 255, 255, 0.3)';
+        });
+    </script>
+</body>
+</html>
