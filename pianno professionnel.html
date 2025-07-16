@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Piano Virtuel Professionnel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --black-key: linear-gradient(145deg, #2c3e50, #000);
+            --white-key: linear-gradient(to bottom, #fff 0%, #f5f5f5 100%);
+            --primary: #8e44ad;
+            --secondary: #3498db;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        .piano-container {
+            width: 95%;
+            max-width: 1200px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .piano-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(to right, #8e44ad, #3498db);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 700;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(145deg, var(--primary), #9b59b6);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            backdrop-filter: blur(5px);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .piano {
+            position: relative;
+            height: 280px;
+            display: flex;
+            margin: 0 auto;
+            touch-action: manipulation;
+        }
+
+        .key {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.1s ease;
+        }
+
+        .white {
+            height: 100%;
+            background: var(--white-key);
+            border: 1px solid #e0e0e0;
+            border-radius: 0 0 8px 8px;
+            flex: 1;
+            color: #333;
+            z-index: 1;
+            box-shadow: inset 0 -5px 10px rgba(0, 0, 0, 0.05),
+                        0 2px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .white.active {
+            background: linear-gradient(to bottom, #e0e0e0 0%, #d0d0d0 100%);
+            box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.1);
+            transform: translateY(2px);
+        }
+
+        .black {
+            height: 65%;
+            background: var(--black-key);
+            border-radius: 0 0 6px 6px;
+            width: 45px;
+            margin: 0 -22.5px;
+            z-index: 2;
+            color: white;
+            box-shadow: inset 0 -7px 15px rgba(0, 0, 0, 0.4),
+                        0 3px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .black.active {
+            background: linear-gradient(145deg, #1a1a2e, #000);
+            box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.5);
+            transform: translateY(2px);
+        }
+
+        .key-label {
+            pointer-events: none;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .keyboard-helper {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .settings {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .setting-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 50px;
+        }
+
+        label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        input[type="range"] {
+            width: 100px;
+        }
+
+        @media (max-width: 768px) {
+            .piano {
+                height: 200px;
+            }
+            
+            .black {
+                width: 35px;
+                margin: 0 -17.5px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .btn {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .piano {
+                height: 160px;
+            }
+            
+            .black {
+                width: 28px;
+                margin: 0 -14px;
+            }
+            
+            .key-label {
+                font-size: 0.7rem;
+            }
+            
+            .controls {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="piano-container">
+        <div class="piano-header">
+            <h1>Piano Virtuel Pro</h1>
+            <div class="controls">
+                <button id="record-btn" class="btn btn-primary">
+                    <i class="fas fa-circle"></i> Enregistrer
+                </button>
+                <button id="play-btn" class="btn btn-secondary">
+                    <i class="fas fa-play"></i> Jouer
+                </button>
+                <button id="clear-btn" class="btn btn-secondary">
+                    <i class="fas fa-trash"></i> Effacer
+                </button>
+            </div>
+        </div>
+        
+        <div class="piano">
+            <!-- Octave 3 -->
+            <div class="key white" data-note="C3">
+                <span class="key-label">C (A)</span>
+            </div>
+            <div class="key black" data-note="C#3">
+                <span class="key-label">C# (W)</span>
+            </div>
+            <div class="key white" data-note="D3">
+                <span class="key-label">D (S)</span>
+            </div>
+            <div class="key black" data-note="D#3">
+                <span class="key-label">D# (E)</span>
+            </div>
+            <div class="key white" data-note="E3">
+                <span class="key-label">E (D)</span>
+            </div>
+            <div class="key white" data-note="F3">
+                <span class="key-label">F (F)</span>
+            </div>
+            <div class="key black" data-note="F#3">
+                <span class="key-label">F# (T)</span>
+            </div>
+            <div class="key white" data-note="G3">
+                <span class="key-label">G (G)</span>
+            </div>
+            <div class="key black" data-note="G#3">
+                <span class="key-label">G# (Y)</span>
+            </div>
+            <div class="key white" data-note="A3">
+                <span class="key-label">A (H)</span>
+            </div>
+            <div class="key black" data-note="A#3">
+                <span class="key-label">A# (U)</span>
+            </div>
+            <div class="key white" data-note="B3">
+                <span class="key-label">B (J)</span>
+            </div>
+            
+            <!-- Octave 4 -->
+            <div class="key white" data-note="C4">
+                <span class="key-label">C (K)</span>
+            </div>
+        </div>
+        
+        <div class="settings">
+            <div class="setting-group">
+                <label for="volume"><i class="fas fa-volume-up"></i> Volume</label>
+                <input type="range" id="volume" min="0" max="1" step="0.01" value="0.7">
+            </div>
+            <div class="setting-group">
+                <label for="reverb"><i class="fas fa-wave-square"></i> Réverbération</label>
+                <input type="range" id="reverb" min="0" max="1" step="0.1" value="0.3">
+            </div>
+        </div>
+        
+        <div class="keyboard-helper">
+            <p>Utilisez votre clavier ou touchez les notes. Appuyez sur R pour enregistrer, P pour jouer.</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialisation
+            const pianoKeys = document.querySelectorAll('.key');
+            const volumeControl = document.getElementById('volume');
+            const reverbControl = document.getElementById('reverb');
+            const recordBtn = document.getElementById('record-btn');
+            const playBtn = document.getElementById('play-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            
+            let audioContext;
+            let gainNode;
+            let reverbNode;
+            let convolver;
+            let recordedNotes = [];
+            let isRecording = false;
+            let startTime;
+            
+            // Mapping clavier
+            const keyMap = {
+                'a': 'C3', 'w': 'C#3', 's': 'D3', 'e': 'D#3', 'd': 'E3',
+                'f': 'F3', 't': 'F#3', 'g': 'G3', 'y': 'G#3', 'h': 'A3',
+                'u': 'A#3', 'j': 'B3', 'k': 'C4',
+                'r': 'record-btn', 'p': 'play-btn'
+            };
+            
+            // Initialisation audio
+            function initAudio() {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Création des nodes audio
+                gainNode = audioContext.createGain();
+                gainNode.gain.value = volumeControl.value;
+                
+                reverbNode = audioContext.createGain();
+                reverbNode.gain.value = reverbControl.value;
+                
+                convolver = audioContext.createConvolver();
+                createReverbImpulse();
+                
+                // Connexion des nodes
+                gainNode.connect(convolver);
+                convolver.connect(reverbNode);
+                reverbNode.connect(audioContext.destination);
+            }
+            
+            // Création d'une réverbération artificielle
+            function createReverbImpulse() {
+                const sampleRate = audioContext.sampleRate;
+                const length = sampleRate * 2;
+                const impulse = audioContext.createBuffer(2, length, sampleRate);
+                const left = impulse.getChannelData(0);
+                const right = impulse.getChannelData(1);
+                
+                for (let i = 0; i < length; i++) {
+                    const n = length - i;
+                    left[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 3);
+                    right[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 3);
+                }
+                
+                convolver.buffer = impulse;
+            }
+            
+            // Jouer une note avec un son de piano réaliste (synthétisé)
+            function playNote(note) {
+                if (!audioContext) initAudio();
+                
+                const now = audioContext.currentTime;
+                const freq = getNoteFrequency(note);
+                
+                // Création des oscillateurs pour un son plus riche
+                const osc1 = audioContext.createOscillator();
+                const osc2 = audioContext.createOscillator();
+                const osc3 = audioContext.createOscillator();
+                
+                osc1.type = 'sine';
+                osc1.frequency.value = freq;
+                
+                osc2.type = 'triangle';
+                osc2.frequency.value = freq * 2;
+                
+                osc3.type = 'sawtooth';
+                osc3.frequency.value = freq / 2;
+                
+                // Création de l'enveloppe ADSR
+                const envelope = audioContext.createGain();
+                envelope.gain.setValueAtTime(0, now);
+                envelope.gain.linearRampToValueAtTime(0.8, now + 0.01);
+                envelope.gain.exponentialRampToValueAtTime(0.3, now + 0.1);
+                envelope.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                
+                // Connexion des nodes
+                osc1.connect(envelope);
+                osc2.connect(envelope);
+                osc3.connect(envelope);
+                envelope.connect(gainNode);
+                
+                // Démarrage/arrêt des oscillateurs
+                osc1.start(now);
+                osc2.start(now);
+                osc3.start(now);
+                
+                osc1.stop(now + 0.6);
+                osc2.stop(now + 0.6);
+                osc3.stop(now + 0.6);
+                
+                // Enregistrement si activé
+                if (isRecording) {
+                    const time = Date.now() - startTime;
+                    recordedNotes.push({ note, time });
+                }
+            }
+            
+            // Fréquences des notes
+            function getNoteFrequency(note) {
+                const notes = {
+                    'C3': 130.81, 'C#3': 138.59, 'D3': 146.83, 'D#3': 155.56, 'E3': 164.81,
+                    'F3': 174.61, 'F#3': 185.00, 'G3': 196.00, 'G#3': 207.65, 'A3': 220.00,
+                    'A#3': 233.08, 'B3': 246.94, 'C4': 261.63
+                };
+                return notes[note] || 440;
+            }
+            
+            // Gestion des événements tactiles/clavier
+            function activateKey(note) {
+                const key = document.querySelector(`.key[data-note="${note}"]`);
+                if (key) {
+                    key.classList.add('active');
+                    playNote(note);
+                    
+                    // Désactivation après un court délai pour l'effet visuel
+                    setTimeout(() => {
+                        key.classList.remove('active');
+                    }, 200);
+                }
+            }
+            
+            // Écouteurs d'événements pour les touches du piano
+            pianoKeys.forEach(key => {
+                const note = key.dataset.note;
+                
+                // Pour souris
+                key.addEventListener('mousedown', () => activateKey(note));
+                
+                // Pour écrans tactiles
+                key.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    activateKey(note);
+                });
+            });
+            
+            // Gestion du clavier physique
+            document.addEventListener('keydown', (e) => {
+                const key = e.key.toLowerCase();
+                
+                if (keyMap[key]) {
+                    if (key === 'r' || key === 'p') {
+                        document.getElementById(keyMap[key]).click();
+                    } else {
+                        activateKey(keyMap[key]);
+                    }
+                }
+            });
+            
+            // Contrôles
+            volumeControl.addEventListener('input', () => {
+                if (gainNode) gainNode.gain.value = volumeControl.value;
+            });
+            
+            reverbControl.addEventListener('input', () => {
+                if (reverbNode) reverbNode.gain.value = reverbControl.value;
+            });
+            
+            // Enregistrement
+            recordBtn.addEventListener('click', () => {
+                isRecording = !isRecording;
+                
+                if (isRecording) {
+                    recordedNotes = [];
+                    startTime = Date.now();
+                    recordBtn.innerHTML = '<i class="fas fa-stop"></i> Arrêter';
+                    recordBtn.style.background = 'linear-gradient(145deg, #e74c3c, #c0392b)';
+                } else {
+                    recordBtn.innerHTML = '<i class="fas fa-circle"></i> Enregistrer';
+                    recordBtn.style.background = 'linear-gradient(145deg, var(--primary), #9b59b6)';
+                    
+                    if (recordedNotes.length > 0) {
+                        showNotification(`Enregistré ${recordedNotes.length} notes`);
+                    }
+                }
+            });
+            
+            // Lecture
+            playBtn.addEventListener('click', () => {
+                if (recordedNotes.length === 0) {
+                    showNotification('Aucun enregistrement à jouer');
+                    return;
+                }
+                
+                if (!audioContext) initAudio();
+                
+                const startTime = audioContext.currentTime;
+                
+                recordedNotes.forEach(note => {
+                    const playTime = startTime + note.time / 1000;
+                    setTimeout(() => {
+                        playNote(note.note);
+                    }, note.time);
+                });
+            });
+            
+            // Effacer
+            clearBtn.addEventListener('click', () => {
+                recordedNotes = [];
+                showNotification('Enregistrement effacé');
+            });
+            
+            // Notification élégante
+            function showNotification(message) {
+                const notification = document.createElement('div');
+                notification.textContent = message;
+                notification.style.position = 'fixed';
+                notification.style.bottom = '20px';
+                notification.style.left = '50%';
+                notification.style.transform = 'translateX(-50%)';
+                notification.style.background = 'rgba(0, 0, 0, 0.7)';
+                notification.style.color = 'white';
+                notification.style.padding = '10px 20px';
+                notification.style.borderRadius = '50px';
+                notification.style.zIndex = '1000';
+                notification.style.animation = 'fadeInOut 2.5s ease-in-out';
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 2500);
+            }
+            
+            // Style pour la notification
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes fadeInOut {
+                    0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+                    20% { opacity: 1; transform: translateX(-50%) translateY(0); }
+                    80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+                    100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // Initialisation
+            initAudio();
+        });
+    </script>
+</body>
+</html>
