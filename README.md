@@ -13,5 +13,4 @@ A beautiful HTML5/CSS/JavaScript piano that works on all devices. Convertible to
 ## 🚀 Quick Start (English)
 1. **Clone repo**:
    ```bash
- 
- https://github.com/hacker-xioss/PIANNO.git  
+  https://github.com/hacker-xioss/PIANNO.git  
